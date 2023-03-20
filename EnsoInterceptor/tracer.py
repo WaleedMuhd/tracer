@@ -1,8 +1,3 @@
-#!/usr/bin/python
-
-# Authors:
-#       Yaniv Agman <yaniv@aquasec.com>
-
 from __future__ import print_function
 
 import array
@@ -10,7 +5,6 @@ import ctypes
 import json
 import logging
 import sys
-
 from bcc import BPF
 
 log = logging.getLogger()
@@ -20,7 +14,7 @@ handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
 log.addHandler(handler)
 
-BPF_PROGRAM = "tracee/event_monitor_ebpf.c"
+BPF_PROGRAM = "event_monitor_ebpf.c"
 
 # include/uapi/linux/capability.h
 capabilities = {
@@ -112,10 +106,12 @@ sock_domain = {
     44: "AF_XDP",
 }
 
+
 class SupportedAF(object):
-    AF_UNIX         = 1
-    AF_INET         = 2
-    AF_INET6        = 10
+    AF_UNIX = 1
+    AF_INET = 2
+    AF_INET6 = 10
+
 
 sock_type = {
     1: "SOCK_STREAM",
@@ -227,10 +223,11 @@ syscalls = ["execve", "execveat", "mmap", "mprotect", "pkey_mprotect", "clone", 
             "symlink", "symlinkat", "getdents", "getdents64", "creat", "open", "openat",
             "mount", "umount", "unlink", "unlinkat", "setuid", "setgid", "setreuid", "setregid",
             "setresuid", "setresgid", "setfsuid", "setfsgid"]
-sysevents = ["cap_capable", "do_exit", "security_bprm_check", "security_file_open"]
+sysevents = ["cap_capable", "do_exit",
+             "security_bprm_check", "security_file_open"]
 
-# We always need kprobes for execve[at] so that we capture the new PID namespace, 
-# and do_exit so we clean up  
+# We always need kprobes for execve[at] so that we capture the new PID namespace,
+# and do_exit so we clean up
 # In system mode, we also need fork syscall so we can trace new threads
 essential_syscalls = ["execve", "execveat", "fork", "vfork", "clone"]
 essential_sysevents = ["do_exit"]
@@ -580,37 +577,41 @@ event_id = {
 }
 
 # argument types should match defined values in ebpf file code
+
+
 class ArgType(object):
-    NONE            = 0
-    INT_T           = 1
-    UINT_T          = 2
-    LONG_T          = 3
-    ULONG_T         = 4
-    OFF_T_T         = 5
-    MODE_T_T        = 6
-    DEV_T_T         = 7
-    SIZE_T_T        = 8
-    POINTER_T       = 9
-    STR_T           = 10
-    STR_ARR_T       = 11
-    SOCKADDR_T      = 12
-    OPEN_FLAGS_T    = 13
-    EXEC_FLAGS_T    = 14
-    SOCK_DOM_T      = 15
-    SOCK_TYPE_T     = 16
-    CAP_T           = 17
-    SYSCALL_T       = 18
-    PROT_FLAGS_T    = 19
-    ACCESS_MODE_T   = 20
-    PTRACE_REQ_T    = 21
-    PRCTL_OPT_T     = 22
-    R_PATH_T        = 23
-    TYPE_MAX        = 255
+    NONE = 0
+    INT_T = 1
+    UINT_T = 2
+    LONG_T = 3
+    ULONG_T = 4
+    OFF_T_T = 5
+    MODE_T_T = 6
+    DEV_T_T = 7
+    SIZE_T_T = 8
+    POINTER_T = 9
+    STR_T = 10
+    STR_ARR_T = 11
+    SOCKADDR_T = 12
+    OPEN_FLAGS_T = 13
+    EXEC_FLAGS_T = 14
+    SOCK_DOM_T = 15
+    SOCK_TYPE_T = 16
+    CAP_T = 17
+    SYSCALL_T = 18
+    PROT_FLAGS_T = 19
+    ACCESS_MODE_T = 20
+    PTRACE_REQ_T = 21
+    PRCTL_OPT_T = 22
+    R_PATH_T = 23
+    TYPE_MAX = 255
+
 
 class shared_config(object):
-    CONFIG_CONT_MODE    = 0
+    CONFIG_CONT_MODE = 0
     CONFIG_SHOW_SYSCALL = 1
-    CONFIG_EXEC_ENV     = 2
+    CONFIG_EXEC_ENV = 2
+
 
 class context_t(ctypes.Structure):  # match layout of eBPF C's context_t struct
     _fields_ = [("ts", ctypes.c_uint64),
@@ -754,6 +755,7 @@ def access_mode_to_str(flags):
 
     return f_str
 
+
 def sock_type_to_str(sock_type_num):
     type_str = ""
     s_type = sock_type_num & 0xf
@@ -767,6 +769,7 @@ def sock_type_to_str(sock_type_num):
         type_str += "|SOCK_CLOEXEC"
 
     return type_str
+
 
 def open_flags_to_str(flags):
     f_str = ""
@@ -828,10 +831,12 @@ def open_flags_to_str(flags):
 
     return f_str
 
-# Given the list of event names the user wants to trace, get_kprobes() returns the 
-# - syscalls we want kprobes for 
-# - events we want kprobes for 
+# Given the list of event names the user wants to trace, get_kprobes() returns the
+# - syscalls we want kprobes for
+# - events we want kprobes for
 # Includes the essential kprobes needed for Tracee to work
+
+
 def get_kprobes(events):
     sc = essential_syscalls
     se = essential_sysevents
@@ -902,8 +907,10 @@ class EventMonitor:
 
         for syscall in sk:
             syscall_fnname = self.bpf.get_syscall_fnname(syscall)
-            self.bpf.attach_kprobe(event=syscall_fnname, fn_name="syscall__" + syscall)
-            self.bpf.attach_kretprobe(event=syscall_fnname, fn_name="trace_ret_" + syscall)
+            self.bpf.attach_kprobe(event=syscall_fnname,
+                                   fn_name="syscall__" + syscall)
+            self.bpf.attach_kretprobe(
+                event=syscall_fnname, fn_name="trace_ret_" + syscall)
 
         for sysevent in se:
             self.bpf.attach_kprobe(event=sysevent, fn_name="trace_" + sysevent)
@@ -913,10 +920,10 @@ class EventMonitor:
                 "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS"))
 
     def swap_4_bytes(self, num):
-        return (((num <<  24) & 0xFF000000) |
-               ((num  <<   8) & 0x00FF0000) |
-               ((num  >>   8) & 0x0000FF00) |
-               ((num  >>  24) & 0x000000FF))
+        return (((num << 24) & 0xFF000000) |
+                ((num << 8) & 0x00FF0000) |
+                ((num >> 8) & 0x0000FF00) |
+                ((num >> 24) & 0x000000FF))
 
     def get_sockaddr_from_buf(self, buf):
         sockaddr = dict()
@@ -933,7 +940,8 @@ class EventMonitor:
                 sun_path = buf[self.cur_off:self.cur_off + 108]
                 self.cur_off += 108
                 try:
-                    sun_path_str = str(array.array('B', sun_path).tostring().decode("utf-8"))
+                    sun_path_str = str(array.array(
+                        'B', sun_path).tostring().decode("utf-8"))
                     sockaddr["sun_path"] = sun_path_str.strip('\x00')
                 except:
                     sockaddr["sun_path"] = ""
@@ -950,12 +958,14 @@ class EventMonitor:
                 """
                 sin_port = self.get_uint16_from_buf(buf)
                 # convert big endian (network byte order) to little endian (x86)
-                sin_port = ((sin_port <<  8) & 0xFF00) | ((sin_port >>  8) & 0x00FF)
+                sin_port = ((sin_port << 8) & 0xFF00) | (
+                    (sin_port >> 8) & 0x00FF)
                 sockaddr["sin_port"] = str(sin_port)
 
                 sin_addr = str(self.get_uint8_from_buf(buf))
                 for i in range(3):
-                    sin_addr = sin_addr + "." + str(self.get_uint8_from_buf(buf))
+                    sin_addr = sin_addr + "." + \
+                        str(self.get_uint8_from_buf(buf))
                 sockaddr["sin_addr"] = sin_addr
             if domain == SupportedAF.AF_INET6:
                 """
@@ -973,17 +983,21 @@ class EventMonitor:
                 """
                 sin6_port = self.get_uint16_from_buf(buf)
                 # convert big endian (network byte order) to little endian (x86)
-                sin6_port = ((sin6_port <<  8) & 0xFF00) | ((sin6_port >>  8) & 0x00FF)
+                sin6_port = ((sin6_port << 8) & 0xFF00) | (
+                    (sin6_port >> 8) & 0x00FF)
                 sockaddr["sin6_port"] = str(sin6_port)
                 sin6_flowinfo = self.get_uint_from_buf(buf)
                 # convert big endian (network byte order) to little endian (x86)
                 sin6_flowinfo = self.swap_4_bytes(sin6_flowinfo)
                 sockaddr["sin6_flowinfo"] = str(sin6_flowinfo)
                 sin6_addr = str("%0.2X" % self.get_uint8_from_buf(buf))
-                sin6_addr = sin6_addr + str("%0.2X" % self.get_uint8_from_buf(buf))
+                sin6_addr = sin6_addr + \
+                    str("%0.2X" % self.get_uint8_from_buf(buf))
                 for i in range(7):
-                    sin6_addr = sin6_addr + ":" + str("%0.2X" % self.get_uint8_from_buf(buf))
-                    sin6_addr = sin6_addr + str("%0.2X" % self.get_uint8_from_buf(buf))
+                    sin6_addr = sin6_addr + ":" + \
+                        str("%0.2X" % self.get_uint8_from_buf(buf))
+                    sin6_addr = sin6_addr + \
+                        str("%0.2X" % self.get_uint8_from_buf(buf))
                 sockaddr["sin6_addr"] = sin6_addr
                 sin6_scope_id = self.get_uint_from_buf(buf)
                 # convert big endian (network byte order) to little endian (x86)
@@ -995,47 +1009,56 @@ class EventMonitor:
         return sockaddr
 
     def get_type_from_buf(self, buf):
-        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_byte)).contents
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off),
+                            ctypes.POINTER(ctypes.c_byte)).contents
         self.cur_off = self.cur_off + 1
         return c_val.value
 
     def get_uint8_from_buf(self, buf):
-        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_uint8)).contents
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off),
+                            ctypes.POINTER(ctypes.c_uint8)).contents
         self.cur_off = self.cur_off + 1
         return c_val.value
 
     def get_uint16_from_buf(self, buf):
-        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_uint16)).contents
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off),
+                            ctypes.POINTER(ctypes.c_uint16)).contents
         self.cur_off = self.cur_off + 2
         return c_val.value
 
     def get_int_from_buf(self, buf):
-        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_int)).contents
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off),
+                            ctypes.POINTER(ctypes.c_int)).contents
         self.cur_off = self.cur_off + 4
         return c_val.value
 
     def get_uint_from_buf(self, buf):
-        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_uint)).contents
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off),
+                            ctypes.POINTER(ctypes.c_uint)).contents
         self.cur_off = self.cur_off + 4
         return c_val.value
 
     def get_long_from_buf(self, buf):
-        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_long)).contents
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off),
+                            ctypes.POINTER(ctypes.c_long)).contents
         self.cur_off = self.cur_off + 8
         return c_val.value
 
     def get_ulong_from_buf(self, buf):
-        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_ulong)).contents
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off),
+                            ctypes.POINTER(ctypes.c_ulong)).contents
         self.cur_off = self.cur_off + 8
         return c_val.value
 
     def get_pointer_from_buf(self, buf):
-        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_void_p)).contents
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off),
+                            ctypes.POINTER(ctypes.c_void_p)).contents
         self.cur_off = self.cur_off + 8
         return hex(0 if c_val.value is None else c_val.value)
 
     def get_string_from_buf(self, buf):
-        str_size = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_uint)).contents.value
+        str_size = ctypes.cast(ctypes.byref(
+            buf, self.cur_off), ctypes.POINTER(ctypes.c_uint)).contents.value
         str_off = self.cur_off + 4
         str_buf = buf[str_off:str_off + str_size]
         self.cur_off = self.cur_off + str_size + 4
@@ -1080,7 +1103,7 @@ class EventMonitor:
                 data["status"] = [0]
                 data["raw"] = ""
                 data["type"] = ["apicall"]
-                data["time"] = context.ts / 1000000.0
+                data["time"] = context.ts / 1000000.
                 data["mnt_ns"] = context.mnt_id
                 data["pid_ns"] = context.pid_id
                 data["uid"] = context.uid
@@ -1101,7 +1124,8 @@ class EventMonitor:
                 self.events.append(data)
 
     def parse_event(self, event_buf):
-        context = ctypes.cast(ctypes.byref(event_buf), ctypes.POINTER(context_t)).contents
+        context = ctypes.cast(ctypes.byref(event_buf),
+                              ctypes.POINTER(context_t)).contents
         self.cur_off = ctypes.sizeof(context_t)
         args = list()
 
@@ -1142,11 +1166,13 @@ class EventMonitor:
                 elif argtype == ArgType.SOCKADDR_T:
                     args.append(str(self.get_sockaddr_from_buf(event_buf)))
                 elif argtype == ArgType.OPEN_FLAGS_T:
-                    args.append(open_flags_to_str(self.get_int_from_buf(event_buf)))
+                    args.append(open_flags_to_str(
+                        self.get_int_from_buf(event_buf)))
                 elif argtype == ArgType.PROT_FLAGS_T:
                     args.append(prot_to_str(self.get_int_from_buf(event_buf)))
                 elif argtype == ArgType.ACCESS_MODE_T:
-                    args.append(access_mode_to_str(self.get_int_from_buf(event_buf)))
+                    args.append(access_mode_to_str(
+                        self.get_int_from_buf(event_buf)))
                 elif argtype == ArgType.EXEC_FLAGS_T:
                     flags = self.get_int_from_buf(event_buf)
                     args.append(execveat_flags_to_str(flags))
@@ -1196,7 +1222,8 @@ class EventMonitor:
 
     def lost_event(self, lost):
         self.total_lost += lost
-        log.info("Possibly lost %d events (%d in total), consider using a bigger buffer" % (lost, self.total_lost))
+        log.info("Possibly lost %d events (%d in total), consider using a bigger buffer" % (
+            lost, self.total_lost))
 
     def stop_trace(self):
         self.do_trace = False
@@ -1206,7 +1233,8 @@ class EventMonitor:
 
     def monitor_events(self):
         # loop with callback to handle_event
-        self.bpf["events"].open_perf_buffer(self.handle_event, page_cnt=self.buf_pages, lost_cb=self.lost_event)
+        self.bpf["events"].open_perf_buffer(
+            self.handle_event, page_cnt=self.buf_pages, lost_cb=self.lost_event)
         while self.do_trace:
             try:
                 # It would have been better to parse the events in a "consumer" thread

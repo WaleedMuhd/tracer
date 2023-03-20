@@ -1,14 +1,8 @@
-#!/usr/bin/python
-
-# Authors:
-#       Yaniv Agman <yaniv@aquasec.com>
-
-# arguments
 import argparse
 import sys
 import re
 
-from tracee.tracer import EventMonitor, syscalls, sysevents
+from tracer import EventMonitor, syscalls, sysevents
 
 examples = """examples:
     ./start.py -c
