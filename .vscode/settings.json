@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "mount.h": "c",
+        "sched.h": "c",
+        "version.h": "c",
+        "fs.h": "c"
+    }
+}

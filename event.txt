@@ -1,0 +1,5 @@
+1 execve
+2 read
+3 write
+4 vfork
+5 stat

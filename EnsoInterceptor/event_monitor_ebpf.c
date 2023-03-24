@@ -1,6 +1,3 @@
-// +build ignore
-// ^^ this is a golang build tag meant to exclude this C file from compilation by the CGO compiler
-
 #include <uapi/linux/ptrace.h>
 #include <uapi/linux/in.h>
 #include <uapi/linux/in6.h>

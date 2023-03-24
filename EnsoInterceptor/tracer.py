@@ -14,7 +14,7 @@ handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
 log.addHandler(handler)
 
-BPF_PROGRAM = "event_monitor_ebpf.c"
+BPF_PROGRAM = "EnsoInterceptor/event_monitor_ebpf.c"
 
 # include/uapi/linux/capability.h
 capabilities = {
